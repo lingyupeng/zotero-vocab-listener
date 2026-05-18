@@ -77,14 +77,8 @@ The XPI is generated at:
 
 ## Release
 
-Before publishing for real, replace all placeholder metadata in
-[package.json](package.json):
-
-- `YOUR_GITHUB_USERNAME`
-- `YOUR_NAME`
-
-Then create a GitHub release and upload the generated XPI, or use the included
-release workflow after configuring the repository.
+Create a GitHub release and upload the generated XPI, or push a version tag to
+run the included release workflow.
 
 ## Roadmap
 

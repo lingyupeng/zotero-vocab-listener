@@ -3,38 +3,23 @@
 This repository is prepared for GitHub open-source publishing, but it still
 needs your real GitHub account metadata before the first public release.
 
-## 1. Replace Placeholders
-
-In `package.json`, replace:
-
-- `YOUR_GITHUB_USERNAME`
-- `YOUR_NAME`
-
-Then rebuild:
+## 1. Build
 
 ```sh
 npm run build
 ```
 
-## 2. Create the GitHub Repository
-
-Create an empty public repository named:
-
-```text
-zotero-vocab-listener
-```
-
-Then push:
+## 2. Push
 
 ```sh
-git remote add origin git@github.com:YOUR_GITHUB_USERNAME/zotero-vocab-listener.git
+git remote add origin git@github.com:lingyupeng/zotero-vocab-listener.git
 git push -u origin main
 ```
 
 HTTPS also works:
 
 ```sh
-git remote add origin https://github.com/YOUR_GITHUB_USERNAME/zotero-vocab-listener.git
+git remote add origin https://github.com/lingyupeng/zotero-vocab-listener.git
 git push -u origin main
 ```
 

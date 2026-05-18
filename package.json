@@ -12,13 +12,13 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/YOUR_GITHUB_USERNAME/zotero-vocab-listener.git"
+    "url": "git+https://github.com/lingyupeng/zotero-vocab-listener.git"
   },
-  "author": "YOUR_NAME",
+  "author": "lingyupeng",
   "bugs": {
-    "url": "https://github.com/YOUR_GITHUB_USERNAME/zotero-vocab-listener/issues"
+    "url": "https://github.com/lingyupeng/zotero-vocab-listener/issues"
   },
-  "homepage": "https://github.com/YOUR_GITHUB_USERNAME/zotero-vocab-listener",
+  "homepage": "https://github.com/lingyupeng/zotero-vocab-listener",
   "license": "AGPL-3.0-or-later",
   "scripts": {
     "start": "zotero-plugin serve",
