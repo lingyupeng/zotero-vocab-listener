@@ -1,6 +1,6 @@
 # Privacy
 
-Zotero Vocab Listener is local-first.
+Zotero Highlight Collector is local-first.
 
 The plugin reads Zotero annotation metadata from your local Zotero profile and
 stores vocabulary records in Zotero preferences. It does not send collected

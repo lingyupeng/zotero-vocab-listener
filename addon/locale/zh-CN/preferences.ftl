@@ -1,4 +1,4 @@
-pref-title = 生词监听设置
+pref-title = 高亮收集器设置
 pref-enable =
     .label = 开启
 pref-gray-colors = 监听的高亮颜色

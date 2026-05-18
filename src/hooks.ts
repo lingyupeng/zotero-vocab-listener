@@ -39,7 +39,7 @@ async function onMainWindowLoad(win: _ZoteroTypes.MainWindow): Promise<void> {
     `${addon.data.config.addonRef}-mainWindow.ftl`,
   );
 
-  ztoolkit.log("Vocab Listener main window loaded", win.location.href);
+  ztoolkit.log("Highlight Collector main window loaded", win.location.href);
   VocabWindow.registerMenuItem();
 }
 

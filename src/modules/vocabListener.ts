@@ -1,10 +1,13 @@
 import { getPref, setPref } from "../utils/prefs";
+import { getMappingForColor, normalizeColor } from "./highlightMappings";
 
 type ZoteroItem = any;
 
 export interface VocabRecord {
   text: string;
   normalizedText: string;
+  categoryLabel?: string;
+  categorySlug?: string;
   translation?: string;
   paperTitle?: string;
   excerptDate?: string;
@@ -23,15 +26,6 @@ export interface VocabRecord {
   createdAt?: string;
   updatedAt: string;
 }
-
-const FALLBACK_GRAY_COLORS = [
-  "#aaaaaa",
-  "#999999",
-  "#808080",
-  "#7f7f7f",
-  "#666666",
-  "#bfbfbf",
-];
 
 export class VocabListener {
   static registerNotifier() {
@@ -67,7 +61,7 @@ export class VocabListener {
       },
     });
 
-    ztoolkit.log("Vocab Listener notifier registered");
+    ztoolkit.log("Highlight Collector notifier registered");
   }
 
   static unregisterNotifier() {
@@ -99,7 +93,7 @@ export class VocabListener {
       }
 
       const item = Zotero.Items.get(itemID) as ZoteroItem | false;
-      if (!item || !this.isGrayHighlightAnnotation(item)) {
+      if (!item || !this.isWatchedHighlightAnnotation(item)) {
         continue;
       }
 
@@ -120,7 +114,7 @@ export class VocabListener {
     }
   }
 
-  private static isGrayHighlightAnnotation(item: ZoteroItem) {
+  private static isWatchedHighlightAnnotation(item: ZoteroItem) {
     if (typeof item.isAnnotation === "function" && !item.isAnnotation()) {
       return false;
     }
@@ -134,7 +128,7 @@ export class VocabListener {
       return false;
     }
 
-    return this.isGrayColor(item.annotationColor);
+    return Boolean(getMappingForColor(item.annotationColor));
   }
 
   private static async recordFromAnnotation(
@@ -153,6 +147,7 @@ export class VocabListener {
         ? (Zotero.Items.get(attachment.parentItemID) as ZoteroItem | false)
         : attachment || false;
     const paperTitle = parentItem ? this.getTitle(parentItem) : "";
+    const category = getMappingForColor(annotation.annotationColor);
     const contextSentence = getPref("fieldContextSentence")
       ? await this.getContextSentence(text, attachment)
       : "";
@@ -162,6 +157,8 @@ export class VocabListener {
     return {
       text,
       normalizedText: this.normalizeVocabularyText(text),
+      categoryLabel: category?.label || "",
+      categorySlug: category?.slug || "",
       translation: this.cleanText(annotation.annotationComment),
       paperTitle,
       excerptDate,
@@ -172,7 +169,7 @@ export class VocabListener {
           : "annotation",
       annotationKey: annotation.key,
       annotationID: annotation.id,
-      annotationColor: annotation.annotationColor,
+      annotationColor: normalizeColor(annotation.annotationColor),
       annotationComment: this.cleanText(annotation.annotationComment),
       attachmentKey: attachment ? attachment.key : undefined,
       attachmentTitle: attachment ? this.getTitle(attachment) : undefined,
@@ -215,7 +212,11 @@ export class VocabListener {
     );
     setPref("records", JSON.stringify(nextRecords));
     setPref("lastCapturedAt", new Date().toISOString());
-    ztoolkit.log("Vocab Listener captured records", changedRecords, nextRecords);
+    ztoolkit.log(
+      "Highlight Collector captured records",
+      changedRecords,
+      nextRecords,
+    );
     return changedRecords;
   }
 
@@ -236,7 +237,7 @@ export class VocabListener {
       .join(", ");
     new ztoolkit.ProgressWindow(addon.data.config.addonName)
       .createLine({
-        text: `Captured ${records.length} gray highlight(s): ${preview}`,
+        text: `Captured ${records.length} highlight(s): ${preview}`,
         type: "success",
       })
       .show();
@@ -270,6 +271,8 @@ export class VocabListener {
     const keys: Array<keyof VocabRecord> = [
       "text",
       "normalizedText",
+      "categoryLabel",
+      "categorySlug",
       "translation",
       "paperTitle",
       "excerptDate",
@@ -287,41 +290,6 @@ export class VocabListener {
     ];
 
     return keys.every((key) => existing[key] === next[key]);
-  }
-
-  private static isGrayColor(color: string | undefined) {
-    const normalizedColor = this.normalizeColor(color);
-    if (!normalizedColor) {
-      return false;
-    }
-
-    const configuredColors = this.getConfiguredGrayColors();
-    if (configuredColors.includes(normalizedColor)) {
-      return true;
-    }
-
-    const rgb = this.hexToRgb(normalizedColor);
-    if (!rgb) {
-      return false;
-    }
-
-    const max = Math.max(rgb.r, rgb.g, rgb.b);
-    const min = Math.min(rgb.r, rgb.g, rgb.b);
-    const saturation = max === 0 ? 0 : (max - min) / max;
-    const lightness = (max + min) / 510;
-    return saturation <= 0.08 && lightness >= 0.35 && lightness <= 0.82;
-  }
-
-  private static getConfiguredGrayColors() {
-    const raw = getPref("grayColors");
-    const colors =
-      typeof raw === "string"
-        ? raw
-            .split(",")
-            .map((color) => this.normalizeColor(color))
-            .filter((color): color is string => Boolean(color))
-        : [];
-    return colors.length ? colors : FALLBACK_GRAY_COLORS;
   }
 
   private static getAnnotationText(item: ZoteroItem) {
@@ -424,30 +392,4 @@ export class VocabListener {
     return Number.isNaN(date.getTime()) ? String(value) : date.toISOString();
   }
 
-  private static normalizeColor(color: string | undefined) {
-    if (!color) {
-      return "";
-    }
-
-    const trimmed = color.trim().toLowerCase();
-    if (/^#[0-9a-f]{6}$/.test(trimmed)) {
-      return trimmed;
-    }
-    if (/^#[0-9a-f]{3}$/.test(trimmed)) {
-      return `#${trimmed[1]}${trimmed[1]}${trimmed[2]}${trimmed[2]}${trimmed[3]}${trimmed[3]}`;
-    }
-    return "";
-  }
-
-  private static hexToRgb(color: string) {
-    const match = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/.exec(color);
-    if (!match) {
-      return undefined;
-    }
-    return {
-      r: parseInt(match[1], 16),
-      g: parseInt(match[2], 16),
-      b: parseInt(match[3], 16),
-    };
-  }
 }

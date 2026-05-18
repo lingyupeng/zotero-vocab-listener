@@ -2,6 +2,7 @@ import { getPref } from "../utils/prefs";
 import type { VocabRecord } from "./vocabListener";
 
 export type VocabFieldKey =
+  | "category"
   | "word"
   | "paperTitle"
   | "excerptDate"
@@ -13,6 +14,7 @@ export interface VocabField {
   key: VocabFieldKey;
   label: string;
   prefKey:
+    | "fieldCategory"
     | "fieldWord"
     | "fieldPaperTitle"
     | "fieldExcerptDate"
@@ -23,6 +25,12 @@ export interface VocabField {
 }
 
 export const VOCAB_FIELDS: VocabField[] = [
+  {
+    key: "category",
+    label: "Category",
+    prefKey: "fieldCategory",
+    value: (record) => record.categoryLabel || "",
+  },
   {
     key: "word",
     label: "Word",

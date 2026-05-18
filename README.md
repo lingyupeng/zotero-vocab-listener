@@ -1,28 +1,31 @@
-# Zotero Vocab Listener
+# Zotero Highlight Collector
 
-Zotero Vocab Listener is a Zotero plugin that collects vocabulary from PDF
-highlight annotations. It watches configurable highlight colors, records the
-source paper and annotation metadata, shows a vocabulary table inside Zotero,
-and exports the list for CSV or Anki review.
+Zotero Highlight Collector turns Zotero PDF highlights into a personal research
+dataset. Map highlight colors to meanings such as Vocabulary, Core Claim,
+Quote, Method, Conclusion, or Idea, and the plugin will collect matching
+annotations with source metadata for filtering and export.
 
 > Status: early MVP. Tested locally with Zotero 9 during development.
 
 ## Features
 
 - Listen for new or modified Zotero PDF highlight annotations.
-- Collect highlights whose color matches user-configured hex colors.
-- Record word or phrase, paper title, excerpt date, annotation comment
-  translation, context sentence, and page label.
-- Show a unified Vocabulary panel from Zotero's Tools menu.
-- Configure watched colors and visible/exported fields in the same panel.
-- Export vocabulary as CSV.
-- Export Anki-friendly tab-separated text.
+- Map each watched highlight color to a category.
+- Record category, highlight text, paper title, excerpt date, annotation
+  comment translation, context sentence, and page label.
+- Show a unified Highlight Dataset panel from Zotero's Tools menu.
+- Edit color-to-category mappings in the panel.
+- Filter records by category.
+- Configure visible/exported fields.
+- Export the dataset as CSV.
+- Export Anki-friendly tab-separated text for vocabulary review.
 - Store data locally in Zotero preferences.
 
 ## Privacy
 
 This plugin works locally inside Zotero. It does not upload your papers,
-annotations, vocabulary, translations, or metadata to any external service.
+annotations, vocabulary, translations, highlights, or metadata to any external
+service.
 
 See [PRIVACY.md](PRIVACY.md) for details.
 
@@ -39,9 +42,32 @@ See [PRIVACY.md](PRIVACY.md) for details.
 ## Usage
 
 1. Open a PDF in Zotero.
-2. Highlight an unfamiliar word or phrase with one of the watched colors.
-3. Open `Tools` -> `Vocab Listener: Show Vocabulary`.
-4. Review captured vocabulary, adjust settings, or export CSV/Anki text.
+2. Highlight text using a color that you mapped to a research category.
+3. Open `Tools` -> `Highlight Collector: Show Dataset`.
+4. Review captured highlights, edit color/category mappings, filter by
+   category, or export CSV/Anki text.
+
+## Suggested Color Categories
+
+You can choose your own system. A common setup is:
+
+| Color | Category |
+| --- | --- |
+| Gray | Vocabulary |
+| Yellow | Core Claim |
+| Blue | Quote |
+| Green | Method |
+| Red | Conclusion |
+| Purple | Idea |
+
+## Translation Plugin Workflow
+
+This plugin does not translate text by itself. It reads Zotero annotation
+comments and stores them as the Translation field.
+
+If you use a Zotero Translate / PDF Translate plugin, enable the option that
+automatically fills translations into annotation comments. Then this plugin can
+capture both the highlighted text and its translation.
 
 ## Anki Import
 
@@ -52,8 +78,8 @@ Front    Back    Tags
 ```
 
 When importing into Anki, choose a note type with at least two fields, map
-`Front` to the word/phrase and `Back` to the combined translation/context/source
-content. The third field can be imported as tags.
+`Front` to the word/phrase and `Back` to the combined category,
+translation/context/source content. The third field can be imported as tags.
 
 ## Development
 
@@ -72,7 +98,7 @@ npm run build
 The XPI is generated at:
 
 ```text
-.scaffold/build/vocab-listener.xpi
+.scaffold/build/zotero-highlight-collector.xpi
 ```
 
 ## Release
@@ -83,9 +109,10 @@ run the included release workflow.
 ## Roadmap
 
 - Scan existing highlights on demand.
-- Jump from a vocabulary row back to the source annotation.
+- Jump from a dataset row back to the source annotation.
 - Improve context extraction using annotation position/page text.
-- Add richer import/export templates.
+- Add richer export templates, such as literature review CSV and quote bank
+  Markdown.
 
 ## Credits
 

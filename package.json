@@ -1,11 +1,11 @@
 {
-  "name": "zotero-vocab-listener",
+  "name": "zotero-highlight-collector",
   "type": "module",
-  "version": "0.1.6",
-  "description": "Collect vocabulary from configurable Zotero PDF highlight annotations.",
+  "version": "0.2.0",
+  "description": "Build a personal research dataset from Zotero PDF highlight annotations.",
   "config": {
-    "addonName": "Zotero Vocab Listener",
-    "addonID": "vocablistener@zotero-vocab-listener",
+    "addonName": "Zotero Highlight Collector",
+    "addonID": "vocablistener@example.com",
     "addonRef": "vocablistener",
     "addonInstance": "VocabListener",
     "prefsPrefix": "extensions.zotero.vocablistener"

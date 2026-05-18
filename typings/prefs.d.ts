@@ -9,6 +9,8 @@ declare namespace _ZoteroTypes {
     PluginPrefsMap: {
       "enable": boolean;
       "grayColors": string;
+      "highlightMappings": string;
+      "fieldCategory": boolean;
       "fieldWord": boolean;
       "fieldPaperTitle": boolean;
       "fieldExcerptDate": boolean;

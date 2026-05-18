@@ -1,9 +1,9 @@
-pref-title = Vocab Listener Settings
+pref-title = Highlight Collector Settings
 pref-enable =
     .label = Enable
-pref-gray-colors = Watched highlight colors
+pref-gray-colors = Legacy watched highlight colors
 pref-gray-colors-help = Comma-separated hex colors. A highlight is collected when its color matches this list.
-pref-fields-title = Vocabulary fields
+pref-fields-title = Dataset fields
 pref-field-word =
     .label = Word / phrase
 pref-field-paper-title =

@@ -2,21 +2,31 @@ import { VocabListener, VocabRecord } from "./vocabListener";
 import { getEnabledVocabFields, VOCAB_FIELDS } from "./vocabFields";
 import { getPref, setPref } from "../utils/prefs";
 import { VocabExporter } from "./vocabExporter";
+import {
+  CATEGORY_PRESETS,
+  HighlightMapping,
+  cleanSlug,
+  getCategoryOptions,
+  getHighlightMappings,
+  getMappingForColor,
+  setHighlightMappings,
+} from "./highlightMappings";
 
 export class VocabWindow {
   static registerMenuItem() {
     ztoolkit.Menu.register("menuTools", {
       tag: "menuitem",
-      label: "Vocab Listener: Show Vocabulary",
+      label: "Highlight Collector: Show Dataset",
       oncommand: "Zotero.VocabListener.hooks.onDialogEvents('showVocabulary')",
     });
   }
 
-  static show() {
+  static show(categorySlug = "all") {
     const records = VocabListener.getRecords();
-    const dialogData: { loadCallback: () => void } = {
+    const dialogData: { categorySlug: string; loadCallback: () => void } = {
+      categorySlug,
       loadCallback: () => {
-        this.renderPanel(addon.data.dialog?.window, records);
+        this.renderPanel(addon.data.dialog?.window, records, categorySlug);
       },
     };
 
@@ -24,7 +34,7 @@ export class VocabWindow {
       .addCell(0, 0, {
         tag: "div",
         namespace: "html",
-        id: "vocab-listener-root",
+        id: "highlight-collector-root",
         styles: {
           boxSizing: "border-box",
           width: "100%",
@@ -37,7 +47,7 @@ export class VocabWindow {
         },
       })
       .setDialogData(dialogData)
-      .open("Vocab Listener", {
+      .open("Highlight Collector", {
         width: 1120,
         height: 740,
         centerscreen: true,
@@ -46,9 +56,13 @@ export class VocabWindow {
       });
   }
 
-  private static renderPanel(win: Window | undefined, records: VocabRecord[]) {
+  private static renderPanel(
+    win: Window | undefined,
+    records: VocabRecord[],
+    categorySlug = "all",
+  ) {
     const doc = win?.document;
-    const root = doc?.querySelector("#vocab-listener-root") as
+    const root = doc?.querySelector("#highlight-collector-root") as
       | HTMLDivElement
       | undefined;
     if (!doc || !root) {
@@ -56,11 +70,18 @@ export class VocabWindow {
     }
 
     root.innerHTML = "";
-    root.append(this.createToolbar(doc, records));
+    const hydratedRecords = records.map((record) => this.withCategory(record));
+    const visibleRecords =
+      categorySlug === "all"
+        ? hydratedRecords
+        : hydratedRecords.filter(
+            (record) => record.categorySlug === categorySlug,
+          );
+    root.append(this.createToolbar(doc, hydratedRecords, categorySlug));
 
-    if (!records.length) {
+    if (!visibleRecords.length) {
       const empty = doc.createElement("p");
-      empty.textContent = "No gray highlights have been captured yet.";
+      empty.textContent = "No matching highlights have been captured yet.";
       root.append(empty);
       return;
     }
@@ -72,18 +93,24 @@ export class VocabWindow {
     table.append(this.createHeader(doc));
 
     const body = doc.createElement("tbody");
-    for (const record of records) {
+    for (const record of visibleRecords) {
       body.append(this.createRow(doc, record));
     }
     table.append(body);
     root.append(table);
   }
 
-  private static refresh(win: Window | undefined) {
-    this.renderPanel(win, VocabListener.getRecords());
+  private static refresh(win: Window | undefined, categorySlug?: string) {
+    const nextCategorySlug =
+      categorySlug || addon.data.dialog?.dialogData?.categorySlug || "all";
+    this.renderPanel(win, VocabListener.getRecords(), nextCategorySlug);
   }
 
-  private static createToolbar(doc: Document, records: VocabRecord[]) {
+  private static createToolbar(
+    doc: Document,
+    records: VocabRecord[],
+    categorySlug: string,
+  ) {
     const wrapper = doc.createElement("div");
     wrapper.style.position = "sticky";
     wrapper.style.top = "0";
@@ -100,7 +127,7 @@ export class VocabWindow {
     topRow.style.gap = "12px";
 
     const title = doc.createElement("h1");
-    title.textContent = `Vocabulary (${records.length})`;
+    title.textContent = `Highlight Dataset (${records.length})`;
     title.style.margin = "0";
     title.style.fontSize = "22px";
     topRow.append(title);
@@ -117,62 +144,114 @@ export class VocabWindow {
 
     const settings = doc.createElement("div");
     settings.style.display = "grid";
-    settings.style.gridTemplateColumns = "minmax(260px, 360px) 1fr";
+    settings.style.gridTemplateColumns = "minmax(460px, 1.2fr) minmax(360px, 1fr)";
     settings.style.gap = "16px";
     settings.style.marginTop = "12px";
-    settings.append(this.createColorSettings(doc), this.createFieldSettings(doc));
+    settings.append(
+      this.createMappingSettings(doc),
+      this.createFieldAndFilterSettings(doc, categorySlug),
+    );
     wrapper.append(settings);
     return wrapper;
   }
 
-  private static createColorSettings(doc: Document) {
+  private static createMappingSettings(doc: Document) {
     const section = doc.createElement("section");
-    const label = doc.createElement("label");
-    label.textContent = "Watched colors";
-    label.style.display = "block";
-    label.style.fontWeight = "600";
-    label.style.marginBottom = "4px";
+    const title = doc.createElement("div");
+    title.textContent = "Color to category mapping";
+    title.style.fontWeight = "600";
+    title.style.marginBottom = "6px";
+    section.append(title);
 
-    const input = doc.createElement("input");
-    input.type = "text";
-    input.value = String(getPref("grayColors") || "");
-    input.style.boxSizing = "border-box";
-    input.style.width = "100%";
-    input.style.padding = "6px 8px";
-    input.style.border = "1px solid #aaa";
-    input.style.borderRadius = "4px";
-    input.addEventListener("change", () => {
-      setPref("grayColors", input.value);
-      this.refresh(addon.data.dialog?.window);
-    });
-
-    const swatches = doc.createElement("div");
-    swatches.style.marginTop = "6px";
-    for (const color of input.value.split(",").map((value) => value.trim())) {
-      if (!color) {
-        continue;
-      }
-      const swatch = doc.createElement("span");
-      swatch.title = color;
-      swatch.style.display = "inline-block";
-      swatch.style.width = "18px";
-      swatch.style.height = "18px";
-      swatch.style.marginRight = "5px";
-      swatch.style.border = "1px solid #888";
-      swatch.style.background = color;
-      swatches.append(swatch);
+    const mappings = getHighlightMappings();
+    const rows = doc.createElement("div");
+    rows.style.display = "grid";
+    rows.style.gap = "6px";
+    for (const [index, mapping] of mappings.entries()) {
+      rows.append(this.createMappingRow(doc, mapping, index, mappings));
     }
 
-    section.append(label, input, swatches);
+    const addButton = this.createButton(doc, "+ Add Mapping", () => {
+      setHighlightMappings([
+        ...getHighlightMappings(),
+        { color: "#cccccc", label: "Other", slug: "other" },
+      ]);
+      this.refresh(addon.data.dialog?.window);
+    });
+    addButton.style.marginTop = "8px";
+    section.append(rows, addButton);
     return section;
   }
 
-  private static createFieldSettings(doc: Document) {
+  private static createMappingRow(
+    doc: Document,
+    mapping: HighlightMapping,
+    index: number,
+    mappings: HighlightMapping[],
+  ) {
+    const row = doc.createElement("div");
+    row.style.display = "grid";
+    row.style.gridTemplateColumns = "28px 90px minmax(130px, 1fr) minmax(110px, 0.8fr) 72px";
+    row.style.gap = "6px";
+    row.style.alignItems = "center";
+
+    const swatch = doc.createElement("span");
+    swatch.style.width = "20px";
+    swatch.style.height = "20px";
+    swatch.style.border = "1px solid #888";
+    swatch.style.background = mapping.color;
+
+    const colorInput = doc.createElement("input");
+    colorInput.type = "text";
+    colorInput.value = mapping.color;
+    this.styleTextInput(colorInput);
+    colorInput.addEventListener("change", () => {
+      this.updateMapping(index, { color: colorInput.value });
+    });
+
+    const labelInput = doc.createElement("input");
+    labelInput.type = "text";
+    labelInput.value = mapping.label;
+    labelInput.setAttribute("list", "highlight-category-presets");
+    this.styleTextInput(labelInput);
+    labelInput.addEventListener("change", () => {
+      this.updateMapping(index, {
+        label: labelInput.value,
+        slug: cleanSlug(labelInput.value),
+      });
+    });
+
+    const slugInput = doc.createElement("input");
+    slugInput.type = "text";
+    slugInput.value = mapping.slug;
+    this.styleTextInput(slugInput);
+    slugInput.addEventListener("change", () => {
+      this.updateMapping(index, { slug: cleanSlug(slugInput.value) });
+    });
+
+    const removeButton = this.createButton(doc, "Remove", () => {
+      const nextMappings = mappings.filter((_, mappingIndex) => mappingIndex !== index);
+      setHighlightMappings(nextMappings);
+      this.refresh(addon.data.dialog?.window);
+    });
+
+    row.append(swatch, colorInput, labelInput, slugInput, removeButton);
+    this.ensurePresetDatalist(doc);
+    return row;
+  }
+
+  private static createFieldAndFilterSettings(
+    doc: Document,
+    categorySlug: string,
+  ) {
     const section = doc.createElement("section");
+    section.append(this.createCategoryFilter(doc, categorySlug));
+
     const label = doc.createElement("div");
     label.textContent = "Visible / exported fields";
     label.style.fontWeight = "600";
     label.style.marginBottom = "4px";
+    label.style.marginTop = "10px";
     section.append(label);
 
     const fields = doc.createElement("div");
@@ -197,6 +276,43 @@ export class VocabWindow {
     return section;
   }
 
+  private static createCategoryFilter(doc: Document, categorySlug: string) {
+    const wrapper = doc.createElement("div");
+    const label = doc.createElement("label");
+    label.textContent = "Filter category";
+    label.style.display = "block";
+    label.style.fontWeight = "600";
+    label.style.marginBottom = "4px";
+
+    const select = doc.createElement("select");
+    select.style.padding = "6px 8px";
+    select.style.border = "1px solid #aaa";
+    select.style.borderRadius = "4px";
+    select.style.minWidth = "220px";
+
+    const allOption = doc.createElement("option");
+    allOption.value = "all";
+    allOption.textContent = "All categories";
+    select.append(allOption);
+
+    for (const option of getCategoryOptions()) {
+      const categoryOption = doc.createElement("option");
+      categoryOption.value = option.slug;
+      categoryOption.textContent = option.label;
+      select.append(categoryOption);
+    }
+    select.value = categorySlug;
+    select.addEventListener("change", () => {
+      if (addon.data.dialog?.dialogData) {
+        addon.data.dialog.dialogData.categorySlug = select.value;
+      }
+      this.refresh(addon.data.dialog?.window, select.value);
+    });
+
+    wrapper.append(label, select);
+    return wrapper;
+  }
+
   private static createButton(
     doc: Document,
     label: string,
@@ -213,6 +329,42 @@ export class VocabWindow {
       onClick();
     });
     return button;
+  }
+
+  private static updateMapping(
+    index: number,
+    patch: Partial<HighlightMapping>,
+  ) {
+    const mappings = getHighlightMappings();
+    mappings[index] = {
+      ...mappings[index],
+      ...patch,
+    };
+    setHighlightMappings(mappings);
+    this.refresh(addon.data.dialog?.window);
+  }
+
+  private static styleTextInput(input: HTMLInputElement) {
+    input.style.boxSizing = "border-box";
+    input.style.width = "100%";
+    input.style.padding = "5px 6px";
+    input.style.border = "1px solid #aaa";
+    input.style.borderRadius = "4px";
+  }
+
+  private static ensurePresetDatalist(doc: Document) {
+    if (doc.querySelector("#highlight-category-presets")) {
+      return;
+    }
+
+    const datalist = doc.createElement("datalist");
+    datalist.id = "highlight-category-presets";
+    for (const preset of CATEGORY_PRESETS) {
+      const option = doc.createElement("option");
+      option.value = preset;
+      datalist.append(option);
+    }
+    doc.body?.append(datalist);
   }
 
   private static createHeader(doc: Document) {
@@ -248,5 +400,18 @@ export class VocabWindow {
       row.append(cell);
     }
     return row;
+  }
+
+  private static withCategory(record: VocabRecord): VocabRecord {
+    if (record.categoryLabel && record.categorySlug) {
+      return record;
+    }
+
+    const mapping = getMappingForColor(record.annotationColor);
+    return {
+      ...record,
+      categoryLabel: record.categoryLabel || mapping?.label || "",
+      categorySlug: record.categorySlug || mapping?.slug || "",
+    };
   }
 }

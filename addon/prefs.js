@@ -1,5 +1,7 @@
 pref("enable", true);
 pref("grayColors", "#aaaaaa,#999999,#808080,#7f7f7f,#666666,#bfbfbf");
+pref("highlightMappings", "[{\"color\":\"#aaaaaa\",\"label\":\"Vocabulary\",\"slug\":\"vocabulary\"},{\"color\":\"#ffd400\",\"label\":\"Core Claim\",\"slug\":\"core_claim\"},{\"color\":\"#2ea8ff\",\"label\":\"Quote\",\"slug\":\"quote\"},{\"color\":\"#5fbf75\",\"label\":\"Method\",\"slug\":\"method\"},{\"color\":\"#ff6666\",\"label\":\"Conclusion\",\"slug\":\"conclusion\"},{\"color\":\"#b983ff\",\"label\":\"Idea\",\"slug\":\"idea\"}]");
+pref("fieldCategory", true);
 pref("fieldWord", true);
 pref("fieldPaperTitle", true);
 pref("fieldExcerptDate", true);

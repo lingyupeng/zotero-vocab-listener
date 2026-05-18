@@ -3,10 +3,14 @@ import { VocabListener, type VocabRecord } from "./vocabListener";
 
 export class VocabExporter {
   static async exportCSV(records = VocabListener.getRecords()) {
-    const path = await this.pickSavePath("Export Vocabulary CSV", "vocab.csv", [
-      ["CSV File(*.csv)", "*.csv"],
-      ["Any", "*.*"],
-    ]);
+    const path = await this.pickSavePath(
+      "Export Highlight Dataset CSV",
+      "highlight-dataset.csv",
+      [
+        ["CSV File(*.csv)", "*.csv"],
+        ["Any", "*.*"],
+      ],
+    );
     if (!path) {
       return;
     }
@@ -18,8 +22,8 @@ export class VocabExporter {
 
   static async exportAnki(records = VocabListener.getRecords()) {
     const path = await this.pickSavePath(
-      "Export Vocabulary for Anki",
-      "vocab-anki.txt",
+      "Export Highlights for Anki",
+      "highlight-anki.txt",
       [
         ["Text File(*.txt)", "*.txt"],
         ["Any", "*.*"],
@@ -65,6 +69,7 @@ export class VocabExporter {
     const rows = records.map((record) => {
       const front = record.text;
       const back = [
+        record.categoryLabel ? `Category: ${record.categoryLabel}` : "",
         record.translation || record.annotationComment || "",
         record.contextSentence ? `Context: ${record.contextSentence}` : "",
         record.paperTitle || record.itemTitle
@@ -74,7 +79,9 @@ export class VocabExporter {
       ]
         .filter(Boolean)
         .join("<br>");
-      const tags = "zotero vocab-listener";
+      const tags = `zotero highlight-collector ${
+        record.categorySlug || "uncategorized"
+      }`;
       return [front, back, tags].map((value) => this.escapeTSV(value)).join("\t");
     });
     return `${rows.join("\n")}\n`;

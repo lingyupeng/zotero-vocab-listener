@@ -23,7 +23,7 @@ function updatePrefsUI() {
     typeof lastCapturedAt === "string" && lastCapturedAt
       ? ` Last captured at ${lastCapturedAt}.`
       : "";
-  summary.textContent = `Captured ${records.length} gray highlight(s).${lastCapturedText}`;
+  summary.textContent = `Captured ${records.length} highlight(s).${lastCapturedText}`;
   updateColorPreview(doc);
 }
 
@@ -32,13 +32,13 @@ function bindPrefEvents() {
   doc
     ?.querySelector(`#zotero-prefpane-${config.addonRef}-enable`)
     ?.addEventListener("command", (event: Event) => {
-      ztoolkit.log("Vocab Listener enable changed", event);
+      ztoolkit.log("Highlight Collector enable changed", event);
     });
 
   doc
     ?.querySelector(`#zotero-prefpane-${config.addonRef}-grayColors`)
     ?.addEventListener("change", (event: Event) => {
-      ztoolkit.log("Vocab Listener gray colors changed", event);
+      ztoolkit.log("Highlight Collector colors changed", event);
       updatePrefsUI();
     });
 }

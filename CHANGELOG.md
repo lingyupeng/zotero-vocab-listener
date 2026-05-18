@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.2.0
+
+- Renamed product direction to Zotero Highlight Collector.
+- Added color-to-category mappings.
+- Added category metadata to captured records.
+- Added category filtering in the dataset panel.
+- Added Category to table and CSV export fields.
+- Kept Anki export for vocabulary-style review workflows.
+
 ## 0.1.6
 
 - Added unified Vocabulary panel with settings and export actions.
