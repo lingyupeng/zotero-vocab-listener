@@ -1,0 +1,10 @@
+pref("enable", true);
+pref("grayColors", "#aaaaaa,#999999,#808080,#7f7f7f,#666666,#bfbfbf");
+pref("fieldWord", true);
+pref("fieldPaperTitle", true);
+pref("fieldExcerptDate", true);
+pref("fieldTranslation", true);
+pref("fieldContextSentence", true);
+pref("fieldPageLabel", true);
+pref("records", "[]");
+pref("lastCapturedAt", "");
